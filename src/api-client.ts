@@ -15,7 +15,10 @@ export type RunResultDTO = {
 };
 
 function baseUrl() {
-  return mustEnv('API_BASE_URL').replace(/\/$/, '');
+  let v = mustEnv('API_BASE_URL').trim();
+  // Allow setting internal Railway host without scheme, e.g. x-tweet-tracker.railway.internal
+  if (!/^https?:\/\//i.test(v)) v = `https://${v}`;
+  return v.replace(/\/$/, '');
 }
 
 function headers() {
