@@ -15,10 +15,30 @@ export type RunResultDTO = {
 };
 
 function baseUrl() {
-  let v = mustEnv('API_BASE_URL').trim();
+  let v = mustEnv('API_BASE_URL').trim().replace(/\/$/, '');
+
+  const hasScheme = /^https?:\/\//i.test(v);
+
   // Allow setting internal Railway host without scheme, e.g. x-tweet-tracker.railway.internal
-  if (!/^https?:\/\//i.test(v)) v = `https://${v}`;
-  return v.replace(/\/$/, '');
+  if (!hasScheme) {
+    const isRailwayInternal = /\.railway\.internal(?::\d+)?$/i.test(v);
+    // Railway internal networking is typically plain HTTP and often needs an explicit port.
+    const scheme = isRailwayInternal ? 'http' : 'https';
+    v = `${scheme}://${v}`;
+  }
+
+  // If this is a railway.internal host and no port is provided, default to 8080.
+  try {
+    const u = new URL(v);
+    if (u.hostname.toLowerCase().endsWith('.railway.internal') && !u.port) {
+      u.port = '8080';
+      v = u.toString().replace(/\/$/, '');
+    }
+  } catch {
+    // ignore
+  }
+
+  return v;
 }
 
 function headers() {
